@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="pt-PT">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>G20 Preview States 2026</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;600;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { 
+            --primary: #00e5ff; 
+            --primary-glow: rgba(0, 229, 255, 0.4);
+            --success: #00ffa3; 
+            --danger: #ff3366; 
+            --warning: #ff9d00;
+            --bg-dark: #030712; 
+            --overlay-bg: rgba(3, 7, 18, 0.85); 
+        }
+        body { 
+            margin: 0; background: var(--bg-dark); overflow: hidden; 
+            font-family: 'Inter', sans-serif; color: white; -webkit-user-select: none; user-select: none; 
+        }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Ultra Glassmorphism */
+        .glass-overlay {
+            background: var(--overlay-bg);
+            -webkit-backdrop-filter: blur(40px) saturate(150%);
+            backdrop-filter: blur(40px) saturate(150%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        
+        .data-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+        }
+        .data-card::before {
+            content: ""; position: absolute; top: 0; left: -100%; width: 50%; height: 2px;
+            background: linear-gradient(90deg, transparent, var(--primary), transparent);
+            transition: left 0.5s ease;
+        }
+        .data-card:hover::before { left: 100%; }
+        .data-card:hover { 
+            border-color: var(--primary-glow); 
+            background: rgba(0, 229, 255, 0.02); 
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px -10px rgba(0,0,0,0.8);
+        }
+        
+        .dimension-label {
+            font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.3em;
+            color: rgba(255,255,255,0.5); font-weight: 800; margin-bottom: 0.5rem; display: block;
+        }
+        .impact-badge {
+            font-size: 0.55rem; font-weight: 900; padding: 3px 8px; border-radius: 4px;
+            text-transform: uppercase; margin-top: 10px; display: inline-block; letter-spacing: 0.1em;
+        }
+        .progress-bar-bg { background: rgba(255,255,255,0.05); border-radius: 999px; height: 4px; overflow: hidden; }
+        .progress-bar-fill { height: 100%; transition: width 1.5s cubic-bezier(0.16, 1, 0.3, 1); }
+        
+        #system-boot {
+            position: absolute; inset: 0; background: radial-gradient(circle at center, #0f172a 0%, #030712 100%); z-index: 200;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .tab-btn { 
+            transition: all 0.3s ease; border-bottom: 2px solid transparent; opacity: 0.5; 
+        }
+        .tab-btn.active { color: var(--primary); border-color: var(--primary); opacity: 1; text-shadow: 0 0 10px var(--primary-glow); }
+        
+        .scanlines {
+            position: fixed; inset: 0; pointer-events: none; z-index: 50;
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.1) 50%, rgba(0,0,0,0.1));
+            background-size: 100% 4px; opacity: 0.3;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .spin-duration-2500 {
+            animation-duration: 2.5s !important;
+        }
+        .rotate-svg {
+            transform: rotate(-90deg);
+        }
+        .debt-gauge-transition {
+            transition: stroke-dasharray 1.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+    </style>
+</head>
+<body>
+    <div class="scanlines"></div>
+
+    <!-- SISTEMA DE CARREGAMENTO -->
+    <div id="system-boot">
+        <div class="relative w-32 h-32 mb-10 flex items-center justify-center">
+            <div class="absolute inset-0 border-[1px] border-white/10 rounded-full scale-125 opacity-30"></div>
+            <div class="absolute inset-0 border-t-2 border-cyan-500 rounded-full animate-spin"></div>
+            <div class="absolute inset-4 border-b-2 border-accent/50 rounded-full animate-spin-reverse spin-duration-2500"></div>
+            <span class="text-white font-mono text-[10px] tracking-widest animate-pulse">2026</span>
+        </div>
+        <h1 class="text-white font-black tracking-[0.8em] text-2xl md:text-3xl uppercase mb-4 text-center">G20 <span class="text-cyan-500 text-xl">PREVIEW STATES</span></h1>
+        <p class="text-[9px] text-cyan-500 font-mono mb-6 uppercase tracking-widest">Desenvolvido por Kássio Serpa</p>
+        <div class="w-64 bg-white/5 h-[2px] overflow-hidden rounded-full"><div id="boot-progress" class="bg-cyan-500 h-full w-0 transition-all duration-[2000ms]"></div></div>
+        <p class="text-[10px] text-gray-500 font-mono mt-6 uppercase tracking-[0.5em] animate-pulse">Sincronizando Matriz Global...</p>
+    </div>
+
+    <!-- RODAPÉ GLOBAL CENTRALIZADO -->
+    <footer class="absolute bottom-8 left-0 right-0 z-20 flex justify-center pointer-events-none px-4">
+        <div class="bg-black/60 p-4 sm:p-5 rounded-2xl border border-white/10 backdrop-blur-md pointer-events-auto text-center shadow-2xl">
+            <h1 class="text-white font-black text-xl sm:text-2xl tracking-tighter">G20 <span class="text-cyan-500">PREVIEW STATES</span></h1>
+            <p class="text-[9px] text-gray-400 font-mono uppercase tracking-widest mt-1 mb-2">Desenvolvido por Kássio Serpa</p>
+            <div class="flex items-center justify-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-success animate-pulse shadow-[0_0_10px_var(--success)]"></span>
+                <p class="text-[8px] sm:text-[9px] text-accent font-mono uppercase tracking-widest font-bold">Monitorizando 20 Nós Estratégicos</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- DASHBOARD DE DOSSIÊ -->
+    <div id="full-dashboard" class="fixed inset-0 z-[100] hidden opacity-0 transition-all duration-700 flex-col glass-overlay overflow-y-auto no-scrollbar">
+        <div class="sticky top-0 bg-black/50 border-b border-white/5 px-4 sm:px-8 lg:px-16 py-4 sm:py-6 flex justify-between items-center z-50 backdrop-blur-2xl">
+            <button onclick="resetView()" class="px-4 sm:px-8 py-2 sm:py-3 bg-white/5 hover:bg-cyan-500 hover:text-black border border-white/10 rounded-sm text-[9px] sm:text-[10px] font-black uppercase tracking-[0.2em] transition-all">← Retornar</button>
+            <h2 id="country-name-title" class="text-xl sm:text-3xl font-black text-white tracking-widest uppercase bg-gradient-to-r from-white to-gray-500 bg-clip-text text-transparent truncate max-w-[50%] text-right sm:text-center">---</h2>
+            <div class="text-right hidden sm:block">
+                <p id="sync-time" class="text-[9px] sm:text-[10px] text-cyan-500 font-mono uppercase tracking-widest">Sync: Real-Time 2026</p>
+            </div>
+        </div>
+
+        <div class="p-4 sm:p-8 lg:p-16 w-full max-w-screen-2xl mx-auto flex-1 flex flex-col">
+            <!-- PAINEL DE PERFORMANCE RÁPIDA -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 mb-8 sm:mb-12">
+                <!-- Info do Líder -->
+                <div class="lg:col-span-4">
+                    <img id="main-flag-display" src="" alt="Bandeira do país selecionado" class="w-full aspect-[16/10] object-cover rounded-xl border border-white/10 shadow-[0_20px_50px_rgba(0,0,0,0.5)] mb-6">
+                    <div class="data-card border-l-4 border-cyan-500 bg-gradient-to-r from-cyan-500/10 to-transparent">
+                        <span class="dimension-label !text-cyan-500">Comando Soberano</span>
+                        <p id="leader-name" class="text-3xl font-black text-white leading-tight mb-2 uppercase tracking-tight">---</p>
+                        <p id="leader-title" class="text-[10px] text-gray-400 font-mono uppercase tracking-widest">---</p>
+                    </div>
+                </div>
+                
+                <!-- Métricas com Gráficos e Gauge -->
+                <div class="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6">
+                    <!-- PIB -->
+                    <div class="data-card flex flex-col justify-center text-center">
+                        <span class="dimension-label">Projeção PIB 2026</span>
+                        <p id="stat-growth" class="text-4xl sm:text-5xl font-black text-success font-mono mt-1 tracking-tighter">--%</p>
+                        <div class="h-10 sm:h-12 w-full mt-3"><canvas id="growth-chart" class="w-full h-full"></canvas></div>
+                    </div>
+                    <!-- Inflação -->
+                    <div class="data-card flex flex-col justify-center text-center">
+                        <span class="dimension-label">Taxa de Inflação</span>
+                        <p id="stat-inflation" class="text-4xl sm:text-5xl font-black text-warning font-mono mt-1 tracking-tighter">--%</p>
+                        <div class="h-10 sm:h-12 w-full mt-3"><canvas id="inflation-chart" class="w-full h-full"></canvas></div>
+                    </div>
+                    <!-- Dívida Pública Gauge -->
+                    <div class="data-card flex flex-col items-center justify-center text-center">
+                        <span class="dimension-label mb-2">Dívida / PIB</span>
+                        <div class="relative w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center mt-2">
+                            <svg class="w-full h-full drop-shadow-[0_0_10px_rgba(255,51,102,0.4)] rotate-svg" viewBox="0 0 36 36">
+                                <path fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="3.5" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                                <path id="debt-gauge" fill="none" stroke="var(--danger)" stroke-width="3.5" stroke-dasharray="0, 100" stroke-linecap="round" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" class="debt-gauge-transition" />
+                            </svg>
+                            <span id="stat-debt" class="absolute font-mono text-xl sm:text-2xl font-black text-white">--%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- NAVEGAÇÃO DIMENSIONAL -->
+            <div class="flex space-x-12 border-b border-white/10 mb-12 overflow-x-auto no-scrollbar">
+                <button onclick="switchTab(1)" id="btn-tab-1" class="tab-btn pb-4 text-[11px] font-black uppercase tracking-[0.2em] active whitespace-nowrap">I. Política & Jurídico</button>
+                <button onclick="switchTab(2)" id="btn-tab-2" class="tab-btn pb-4 text-[11px] font-black uppercase tracking-[0.2em] whitespace-nowrap">II. Economia & Mercado</button>
+                <button onclick="switchTab(3)" id="btn-tab-3" class="tab-btn pb-4 text-[11px] font-black uppercase tracking-[0.2em] whitespace-nowrap">III. Infra & Externo</button>
+            </div>
+
+            <!-- CONTEÚDO DAS DIMENSÕES -->
+            <div id="tab-content" class="flex-1 grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
+                <!-- Injetado via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- CONTAINER THREE.JS -->
+    <div id="container" class="absolute inset-0 z-0 bg-[#030712]"></div>
+
+    <script>
+        // --- DATASET G20 COMPLETO & DIMENSIONAL 2026 ---
+        const G20_INTEL = {
+            'br': { name: "Brasil", leader: "Lula da Silva", title: "Presidente", iso3: "BRA", growth: "2.25", inflation: "4.05", debt: 82.4,
+                dim_politics: { status: "Risco Fiscal Monitorizado", indicator: "Expansão vs Controle", impact: "Incerteza regulatória; Necessidade de cautela.", level: 65 },
+                dim_juridical: { status: "Estabilidade com Burocracia", indicator: "Insegurança Jurídica", impact: "Aumento de custos contratuais.", level: 55 },
+                dim_economy: { status: "Crescimento Moderado", indicator: "Selic Restritiva", impact: "Custo de capital pressiona rentabilidade.", level: 45 },
+                dim_market: { status: "Expansão de Consumo", indicator: "Incentivos de Renda", impact: "Potencial alto no varejo e serviços.", level: 80 },
+                dim_infra: { status: "Foco em Renováveis", indicator: "Gargalos Logísticos", impact: "Desafios em escoamento portuário.", level: 60 },
+                dim_external: { status: "Exposição a Commodities", indicator: "Vulnerabilidade Cambial", impact: "Exposto a choques da China/EUA.", level: 50 } },
+            'us': { name: "Estados Unidos", leader: "Donald Trump", title: "Presidente", iso3: "USA", growth: "2.3", inflation: "3.10", debt: 124.0,
+                dim_politics: { status: "Protecionismo Agressivo", indicator: "Guerra Tarifária", impact: "Fomento industrial local; atrito global.", level: 75 },
+                dim_juridical: { status: "Desregulamentação", indicator: "Segurança Alta", impact: "Aceleração rápida de M&A e investimentos.", level: 90 },
+                dim_economy: { status: "Resiliência Notável", indicator: "Dólar Hegemónico", impact: "Porto seguro para capital internacional.", level: 85 },
+                dim_market: { status: "Demanda Liderada por IA", indicator: "Consumo de Serviços", impact: "Liderança global em inovação e Tech.", level: 95 },
+                dim_infra: { status: "Modernização Estratégica", indicator: "Chips & Data Centers", impact: "Revolução da Indústria 4.0 interna.", level: 88 },
+                dim_external: { status: "Revisão de Alianças", indicator: "Tensão Geopolítica", impact: "Redesenho de supply-chains (Nearshoring).", level: 70 } },
+            'cn': { name: "China", leader: "Xi Jinping", title: "Presidente", iso3: "CHN", growth: "4.5", inflation: "1.20", debt: 85.0,
+                dim_politics: { status: "Controle Centralizado", indicator: "Poder Estatal Forte", impact: "Previsibilidade com intervenção súbita.", level: 85 },
+                dim_juridical: { status: "Regulação Estratégica", indicator: "Foco em Segurança", impact: "Acesso restrito para tech estrangeira.", level: 40 },
+                dim_economy: { status: "Transição de Modelo", indicator: "Crise Imobiliária", impact: "Desaceleração estrutural em curso.", level: 55 },
+                dim_market: { status: "Consumo Cauteloso", indicator: "Poupança Elevada", impact: "Aposta em EVs e tecnologias verdes locais.", level: 75 },
+                dim_infra: { status: "Vanguarda Global", indicator: "Alta Velocidade & Portos", impact: "Eficiência logística incomparável.", level: 95 },
+                dim_external: { status: "Confronto Tecnológico", indicator: "Tarifas do Ocidente", impact: "Aceleração de autossuficiência.", level: 60 } },
+            'de': { name: "Alemanha", leader: "Friedrich Merz", title: "Chanceler", iso3: "DEU", growth: "1.4", inflation: "2.30", debt: 66.5,
+                dim_politics: { status: "Consolidação Conservadora", indicator: "Rigor Orçamental", impact: "Estabilidade macroeconómica restaurada.", level: 85 },
+                dim_juridical: { status: "Estado de Direito Forte", indicator: "Proteção de Patentes", impact: "Altíssima confiança para P&D.", level: 95 },
+                dim_economy: { status: "Recuperação Industrial Lenta", indicator: "Custo Energético", impact: "Margens de manufatura pressionadas.", level: 60 },
+                dim_market: { status: "Poder de Compra Elevado", indicator: "Envelhecimento Demográfico", impact: "Foco em saúde, automação e serviços.", level: 75 },
+                dim_infra: { status: "Logística Europeia Core", indicator: "Transição Verde", impact: "Excelente base para exportações.", level: 92 },
+                dim_external: { status: "Exposição Geoeconómica", indicator: "Dependência de Exportação", impact: "Vulnerabilidade a tarifas globais.", level: 55 } },
+            'in': { name: "Índia", leader: "Narendra Modi", title: "Primeiro-Ministro", iso3: "IND", growth: "6.5", inflation: "4.80", debt: 81.0,
+                dim_politics: { status: "Maioria Estável", indicator: "Nacionalismo Económico", impact: "Continuidade de reformas pró-mercado.", level: 80 },
+                dim_juridical: { status: "Complexidade Sistémica", indicator: "Morosidade Legal", impact: "Necessidade de parcerias locais fortes.", level: 45 },
+                dim_economy: { status: "Expansão Acelerada", indicator: "Boom de Manufatura", impact: "Principal motor de crescimento global.", level: 90 },
+                dim_market: { status: "Ascensão da Classe Média", indicator: "Escala Populacional", impact: "Maior potencial de consumo varejista do G20.", level: 95 },
+                dim_infra: { status: "Investimento Massivo", indicator: "Modernização Acelerada", impact: "Redução progressiva de custos logísticos.", level: 70 },
+                dim_external: { status: "Alternativa à China", indicator: "Importação de Energia", impact: "Atração recorde de IDE (Nearshoring).", level: 85 } },
+            'gb': { name: "Reino Unido", leader: "Keir Starmer", title: "Primeiro-Ministro", iso3: "GBR", growth: "1.5", inflation: "2.20", debt: 98.0,
+                dim_politics: { status: "Maioria Trabalhista", indicator: "Foco em Serviços Públicos", impact: "Estabilidade política após anos de crise.", level: 82 },
+                dim_juridical: { status: "Segurança de Elite", indicator: "Common Law", impact: "Padrão global para contratos corporativos.", level: 95 },
+                dim_economy: { status: "Estagnação Pós-Brexit", indicator: "Baixa Produtividade", impact: "Crescimento limitado a setores de ponta.", level: 50 },
+                dim_market: { status: "Mercado Maduro", indicator: "Poder de Compra Comprimido", impact: "Foco em Deep Tech e Finanças.", level: 70 },
+                dim_infra: { status: "Necessidade de Renovação", indicator: "Transição Energética", impact: "Oportunidades em infraestruturas verdes.", level: 75 },
+                dim_external: { status: "Reconstrução de Laços", indicator: "Acordos Comerciais", impact: "Lenta reintegração nas cadeias da UE.", level: 65 } },
+            'fr': { name: "França", leader: "Emmanuel Macron", title: "Presidente", iso3: "FRA", growth: "1.2", inflation: "2.30", debt: 112.0,
+                dim_politics: { status: "Parlamento Fragmentado", indicator: "Desafio de Governabilidade", impact: "Dificuldade em passar reformas estruturais.", level: 60 },
+                dim_juridical: { status: "Sólido mas Burocrático", indicator: "Direito Civil Forte", impact: "Garantia de propriedade, leis laborais rígidas.", level: 80 },
+                dim_economy: { status: "Pressão Fiscal", indicator: "Défice Elevado", impact: "Possibilidade de aumento de carga tributária.", level: 50 },
+                dim_market: { status: "Consumo Resiliente", indicator: "Qualidade de Vida", impact: "Forte demanda por luxo e tecnologia.", level: 78 },
+                dim_infra: { status: "Soberania Energética", indicator: "Rede Nuclear & TGV", impact: "Energia estável e logística de topo.", level: 90 },
+                dim_external: { status: "Integração Europeia", indicator: "Protecionismo Estratégico", impact: "Liderança na defesa da indústria da UE.", level: 70 } },
+            'ar': { name: "Argentina", leader: "Javier Milei", title: "Presidente", iso3: "ARG", growth: "-0.5", inflation: "95.0", debt: 85.0,
+                dim_politics: { status: "Ajuste de Choque", indicator: "Desregulamentação Extrema", impact: "Alta volatilidade política e social.", level: 40 },
+                dim_juridical: { status: "Reforma Estrutural", indicator: "Abertura Forçada", impact: "Mudanças rápidas de regras; risco elevado.", level: 35 },
+                dim_economy: { status: "Recessão Técnica", indicator: "Saneamento Fiscal", impact: "Compressão de margens no curto prazo.", level: 30 },
+                dim_market: { status: "Poder de Compra Esmagado", indicator: "Correção de Preços", impact: "Mercado deprimido, foco em exportações.", level: 25 },
+                dim_infra: { status: "Défice de Investimento", indicator: "Setor Energético (Vaca Muerta)", impact: "Oportunidades privatizações em logística.", level: 50 },
+                dim_external: { status: "Alinhamento Pró-Ocidente", indicator: "Exportação de Commodities", impact: "Dependência crítica de FMI e Agro.", level: 45 } },
+            'mx': { name: "México", leader: "Claudia Sheinbaum", title: "Presidenta", iso3: "MEX", growth: "2.2", inflation: "4.50", debt: 48.0,
+                dim_politics: { status: "Continuidade Estatal", indicator: "Maioria Governista", impact: "Intervenção estatal em setores estratégicos.", level: 70 },
+                dim_juridical: { status: "Reforma Judicial Discutida", indicator: "Risco de Politização", impact: "Preocupação com independência de cortes.", level: 50 },
+                dim_economy: { status: "Estabilidade Fiscal", indicator: "Remessas Recordes", impact: "Macroeconomia equilibrada.", level: 75 },
+                dim_market: { status: "Demanda Robusta", indicator: "Classe Média Emergente", impact: "Consumo interno forte e resiliente.", level: 82 },
+                dim_infra: { status: "Gargalos de Nearshoring", indicator: "Energia & Água limitadas", impact: "Infraestrutura restringe expansão rápida.", level: 55 },
+                dim_external: { status: "Hub de Nearshoring", indicator: "Integração USMCA", impact: "Principal beneficiário da tensão EUA-China.", level: 90 } },
+            'jp': { name: "Japão", leader: "Shigeru Ishiba", title: "Primeiro-Ministro", iso3: "JPN", growth: "1.0", inflation: "2.10", debt: 255.0,
+                dim_politics: { status: "Estabilidade Institucional", indicator: "Mudança de Liderança LDP", impact: "Ambiente extremamente seguro.", level: 90 },
+                dim_juridical: { status: "Excelência Regulatória", indicator: "Previsibilidade Máxima", impact: "Risco contratual quase nulo.", level: 95 },
+                dim_economy: { status: "Normalização Monetária", indicator: "Fim dos Juros Negativos", impact: "Transição económica desafiante.", level: 60 },
+                dim_market: { status: "Envelhecimento Acelerado", indicator: "Poder de Compra Estagnado", impact: "Demanda por robótica, saúde e automação.", level: 70 },
+                dim_infra: { status: "Padrão Global", indicator: "Tecnologia de Ponta", impact: "Eficiência máxima em transportes.", level: 98 },
+                dim_external: { status: "Segurança Económica", indicator: "Aliança com EUA", impact: "Proteção contra riscos geopolíticos asiáticos.", level: 80 } },
+            'kr': { name: "Coreia do Sul", leader: "Yoon Suk-yeol", title: "Presidente", iso3: "KOR", growth: "2.2", inflation: "2.60", debt: 52.0,
+                dim_politics: { status: "Presidencialismo Forte", indicator: "Polarização Política", impact: "Políticas favoráveis a grandes conglomerados.", level: 75 },
+                dim_juridical: { status: "Ambiente Seguro", indicator: "Proteção de P&D", impact: "Garantia sólida para patentes tecnológicas.", level: 85 },
+                dim_economy: { status: "Foco em Exportação", indicator: "Liderança em Chips/Baterias", impact: "Altamente sensível ao ciclo tech global.", level: 78 },
+                dim_market: { status: "Mercado Sofisticado", indicator: "Tendências Tech", impact: "Early adopters de tecnologias de consumo.", level: 85 },
+                dim_infra: { status: "Infra Digital de Elite", indicator: "Banda Larga 6G", impact: "Vanguarda na conectividade corporativa.", level: 96 },
+                dim_external: { status: "Risco Geopolítico Local", indicator: "Tensão Norte-Sul", impact: "Ameaça militar latente, dependência comercial.", level: 55 } },
+            'au': { name: "Austrália", leader: "Anthony Albanese", title: "Primeiro-Ministro", iso3: "AUS", growth: "1.5", inflation: "3.40", debt: 36.0,
+                dim_politics: { status: "Democracia Robusta", indicator: "Estabilidade Bipartidária", impact: "Segurança de longo prazo para capital.", level: 92 },
+                dim_juridical: { status: "Common Law Forte", indicator: "Transparência Total", impact: "Zero atritos legais inesperados.", level: 95 },
+                dim_economy: { status: "Resiliência baseada em Recursos", indicator: "Baixa Dívida", impact: "Economia sólida sustentada por mineração.", level: 85 },
+                dim_market: { status: "Elevado PIB per Capita", indicator: "Crescimento Populacional", impact: "Mercado imobiliário e de serviços aquecido.", level: 82 },
+                dim_infra: { status: "Desafios de Escala", indicator: "Transição Energética", impact: "Grandes investimentos em rede verde necessários.", level: 78 },
+                dim_external: { status: "Balanço Estratégico", indicator: "Exportação p/ Ásia", impact: "Exposição à China mitigada pela aliança AUKUS.", level: 75 } },
+            'ca': { name: "Canadá", leader: "Justin Trudeau", title: "Primeiro-Ministro", iso3: "CAN", growth: "1.6", inflation: "2.50", debt: 105.0,
+                dim_politics: { status: "Estabilidade Democrática", indicator: "Transição Possível", impact: "Políticas previsíveis, independentemente do partido.", level: 90 },
+                dim_juridical: { status: "Quadro Legal Premium", indicator: "Proteção ao Investidor", impact: "Ambiente altamente regulado e seguro.", level: 94 },
+                dim_economy: { status: "Integração Norte-Americana", indicator: "Setor Financeiro Forte", impact: "Economia estável ancorada em recursos e finanças.", level: 82 },
+                dim_market: { status: "Crescimento via Imigração", indicator: "Diversidade", impact: "Expansão de força de trabalho e consumo.", level: 85 },
+                dim_infra: { status: "Logística Transcontinental", indicator: "Foco em Minerais Críticos", impact: "Boa base, mas desafios geográficos extremos.", level: 84 },
+                dim_external: { status: "Dependência dos EUA", indicator: "USMCA", impact: "Sincronizado com a economia americana.", level: 70 } },
+            'it': { name: "Itália", leader: "Giorgia Meloni", title: "Primeira-Ministra", iso3: "ITA", growth: "0.8", inflation: "1.50", debt: 140.0,
+                dim_politics: { status: "Estabilidade Surpreendente", indicator: "Coligação Sólida", impact: "Continuidade política maior que o histórico.", level: 75 },
+                dim_juridical: { status: "Sistema Lento", indicator: "Burocracia Europeia", impact: "Resolução de disputas comerciais demorada.", level: 60 },
+                dim_economy: { status: "Dívida Estrutural Alta", indicator: "Fundos de Recuperação UE", impact: "Espaço fiscal limitado para estímulos.", level: 50 },
+                dim_market: { status: "Declínio Demográfico", indicator: "Poupança Privada Alta", impact: "Mercado consumidor estagnado.", level: 65 },
+                dim_infra: { status: "Modernização em Curso", indicator: "PRR Europeu", impact: "Melhorias ferroviárias e digitais apoiadas pela UE.", level: 78 },
+                dim_external: { status: "Integração Euro", indicator: "Exposição Energética", impact: "Protegida pelo BCE, vulnerável a custos de energia.", level: 68 } },
+            'id': { name: "Indonésia", leader: "Prabowo Subianto", title: "Presidente", iso3: "IDN", growth: "5.0", inflation: "3.00", debt: 39.0,
+                dim_politics: { status: "Transição Pacífica", indicator: "Continuidade de Políticas", impact: "Foco em desenvolvimento e downstreaming.", level: 72 },
+                dim_juridical: { status: "Evolução Regulatória", indicator: "Nacionalismo de Recursos", impact: "Regras forçam processamento local de minérios.", level: 55 },
+                dim_economy: { status: "Crescimento Sólido", indicator: "Baixa Dívida Pública", impact: "Fundamentos macroeconómicos fortes.", level: 85 },
+                dim_market: { status: "Gigante Emergente", indicator: "Classe Média Jovem", impact: "Demanda massiva por bens de consumo e tech.", level: 90 },
+                dim_infra: { status: "Nova Capital & Conectividade", indicator: "Geografia Insular", impact: "Desafios logísticos severos sendo endereçados.", level: 60 },
+                dim_external: { status: "Não-Alinhamento Estratégico", indicator: "Exportação de Níquel", impact: "Equilíbrio entre EUA e China atrai investimentos.", level: 80 } },
+            'sa': { name: "Arábia Saudita", leader: "Mohammed bin Salman", title: "Príncipe Herdeiro", iso3: "SAU", growth: "4.2", inflation: "1.80", debt: 24.0,
+                dim_politics: { status: "Monarquia Absoluta", indicator: "Visão 2030", impact: "Poder decisório rápido e centralizado.", level: 85 },
+                dim_juridical: { status: "Modernização Legal", indicator: "Zonas Económicas Especiais", impact: "Atraindo capital com regras ocidentalizadas.", level: 65 },
+                dim_economy: { status: "Diversificação Acelerada", indicator: "Fundo Soberano PIF", impact: "Capital massivo injetado em não-petróleo.", level: 88 },
+                dim_market: { status: "Abertura Cultural", indicator: "População Jovem Riquíssima", impact: "Boom em entretenimento, turismo e tech.", level: 82 },
+                dim_infra: { status: "Megaprojetos (NEOM)", indicator: "Logística Global", impact: "Construção de infraestrutura do zero.", level: 85 },
+                dim_external: { status: "Poder Energético", indicator: "Gestão OPEP+", impact: "Vulnerável apenas a colapsos no preço do petróleo.", level: 75 } },
+            'za': { name: "África do Sul", leader: "Cyril Ramaphosa", title: "Presidente", iso3: "ZAF", growth: "1.1", inflation: "5.20", debt: 70.0,
+                dim_politics: { status: "Governo de Unidade", indicator: "Coligação Inédita", impact: "Esforço para travar declínio institucional.", level: 55 },
+                dim_juridical: { status: "Independência Judicial", indicator: "Crime e Corrupção", impact: "Leis fortes, mas execução falha e insegura.", level: 60 },
+                dim_economy: { status: "Estagnação Crónica", indicator: "Desemprego Estrutural", impact: "Economia travada por falta de energia e logística.", level: 35 },
+                dim_market: { status: "Desigualdade Extrema", indicator: "Mercado Dual", impact: "Base de consumo limitada à classe média-alta.", level: 50 },
+                dim_infra: { status: "Colapso Logístico", indicator: "Crise de Energia (Eskom)", impact: "Apagões e portos ineficientes destroem margens.", level: 30 },
+                dim_external: { status: "Exportador de Minerais", indicator: "Volatilidade Global", impact: "Altamente exposta a preços de commodities.", level: 45 } },
+            'tr': { name: "Turquia", leader: "R. T. Erdoğan", title: "Presidente", iso3: "TUR", growth: "3.1", inflation: "42.0", debt: 33.0,
+                dim_politics: { status: "Presidencialismo Autoritário", indicator: "Poder Concentrado", impact: "Interferência política imprevisível.", level: 45 },
+                dim_juridical: { status: "Insegurança Jurídica", indicator: "Mudanças de Regras", impact: "Risco alto para contratos de longo prazo.", level: 35 },
+                dim_economy: { status: "Retorno à Ortodoxia Lento", indicator: "Inflação Crónica", impact: "Custo de vida alto, mas indústria resiliente.", level: 40 },
+                dim_market: { status: "Dinâmico e Jovem", indicator: "Poder de Compra Corroído", impact: "Mercado interno sofre, mas exporta bem.", level: 65 },
+                dim_infra: { status: "Hub Logístico Euro-Asiático", indicator: "Pontes & Aeroportos", impact: "Excelente conectividade e capacidade industrial.", level: 82 },
+                dim_external: { status: "Equilibrista Geopolítico", indicator: "Risco Cambial Constante", impact: "Vulnerabilidade financeira vs posição geoestratégica.", level: 50 } },
+            'ru': { name: "Rússia", leader: "Vladimir Putin", title: "Presidente", iso3: "RUS", growth: "1.8", inflation: "7.40", debt: 19.0,
+                dim_politics: { status: "Regime Autoritário", indicator: "Economia de Guerra", impact: "Controlo estatal total sobre recursos estratégicos.", level: 20 },
+                dim_juridical: { status: "Ausência de Estado de Direito", indicator: "Sanções Internacionais", impact: "Mercado inacessível/arriscado para capital ocidental.", level: 10 },
+                dim_economy: { status: "Resiliência a Sanções", indicator: "Gastos Militares", impact: "Crescimento artificial impulsionado pela guerra.", level: 45 },
+                dim_market: { status: "Isolamento Tecnológico", indicator: "Substituição de Importações", impact: "Falta de bens ocidentais, inflação localizada.", level: 40 },
+                dim_infra: { status: "Reorientação para o Oriente", indicator: "Gasodutos Ásia", impact: "Logística adaptada para contornar sanções.", level: 60 },
+                dim_external: { status: "Desconexão do Sistema Dólar", indicator: "Parceria com China", impact: "Totalmente dependente de rotas comerciais alternativas.", level: 15 } },
+            'eu': { name: "União Europeia", leader: "Ursula von der Leyen", title: "Pres. Comissão", iso3: "EUU", growth: "1.2", inflation: "2.10", debt: 88.0,
+                dim_politics: { status: "Governança Complexa", indicator: "Acordos a 27 Blocos", impact: "Decisões lentas mas extremamente sólidas.", level: 85 },
+                dim_juridical: { status: "Padrão Ouro Regulatório", indicator: "GDPR & AI Act", impact: "Regras estritas que protegem cidadãos, custosas para empresas.", level: 90 },
+                dim_economy: { status: "Estabilidade com Baixo Crescimento", indicator: "Mercado Único", impact: "Bloco económico massivo mas com baixa inovação tech.", level: 75 },
+                dim_market: { status: "Maior Mercado de Alta Renda", indicator: "Envelhecimento", impact: "Consumidor exigente, sustentável e regulado.", level: 92 },
+                dim_infra: { status: "Integração Continental", indicator: "Green Deal", impact: "Transição energética avançada e logística sem fronteiras.", level: 95 },
+                dim_external: { status: "Poder Normativo Global", indicator: "Dependência de Matérias-Primas", impact: "Vulnerabilidade em supply-chains de tech e energia.", level: 70 } }
+        };
+
+        const ALL_ISO3 = Object.values(G20_INTEL).map(v => v.iso3);
+        let scene, camera, renderer, controls, raycaster, mouse, currentData;
+        let flagNodes = [], animatedRings = [];
+        let mapGroup = new THREE.Group();
+
+        function init3D() {
+            scene = new THREE.Scene();
+            scene.fog = new THREE.FogExp2(0x030712, 0.0018); // Névoa volumétrica
+
+            // Ângulo cinemático
+            camera = new THREE.PerspectiveCamera(35, window.innerWidth/window.innerHeight, 1, 2000);
+            camera.position.set(0, -180, 240);
+            
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: "high-performance" });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            document.getElementById('container').appendChild(renderer.domElement);
+            
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableRotate = true; 
+            controls.enablePan = false; 
+            controls.enableZoom = true;
+            controls.maxPolarAngle = Math.PI / 1.5;
+            controls.minDistance = 100;
+            controls.maxDistance = 500;
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            raycaster = new THREE.Raycaster(); mouse = new THREE.Vector2();
+
+            // Grelha Holográfica
+            const gridGeo = new THREE.GridHelper(2000, 100, 0x00e5ff, 0x00e5ff);
+            gridGeo.rotation.x = Math.PI/2; 
+            gridGeo.position.z = -2;
+            gridGeo.material.opacity = 0.08; 
+            gridGeo.material.transparent = true;
+            scene.add(gridGeo);
+
+            // Estrelas de Fundo Animadas
+            const starGeo = new THREE.BufferGeometry();
+            const starPos = [];
+            for(let i=0; i<4000; i++) starPos.push((Math.random()-0.5)*3000, (Math.random()-0.5)*3000, (Math.random()-0.5)*2000 - 500);
+            starGeo.setAttribute('position', new THREE.Float32BufferAttribute(starPos, 3));
+            const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0x00e5ff, size: 1.2, transparent: true, opacity: 0.4, sizeAttenuation: true }));
+            scene.add(stars);
+
+            scene.add(mapGroup);
+
+            // Construção do Mapa Avançado - Todos os Países
+            fetch('https://raw.githubusercontent.com/johan/world.geo.json/master/countries.geo.json')
+                .then(r => r.json()).then(geo => {
+                    geo.features.forEach(feat => {
+                        const isG20 = Object.values(G20_INTEL).some(v => v.iso3 === feat.id);
+                        
+                        // Materiais
+                        const matSolid = new THREE.MeshStandardMaterial({ 
+                            color: isG20 ? 0x0a1120 : 0x020408, // Fundo ultra escuro para não-G20 
+                            transparent: true, opacity: isG20 ? 0.9 : 0.4,
+                            emissive: isG20 ? 0x002244 : 0x000000, 
+                            roughness: 0.2, metalness: 0.8
+                        });
+
+                        const coords = feat.geometry.type === "Polygon" ? [feat.geometry.coordinates[0]] : feat.geometry.coordinates.map(p => p[0]);
+                        coords.forEach(c => {
+                            const shape = new THREE.Shape();
+                            c.forEach((pt, i) => { 
+                                const x = (pt[0]/180)*150, y = (pt[1]/90)*75; // Escala
+                                if(i===0) shape.moveTo(x,y); else shape.lineTo(x,y);
+                            });
+                            
+                            const depth = isG20 ? 4 : 0.5;
+                            const geom = new THREE.ExtrudeGeometry(shape, {depth: depth, bevelEnabled: false});
+                            const mesh = new THREE.Mesh(geom, matSolid);
+                            mapGroup.add(mesh);
+
+                            // Bordas de Território para TODOS os países para formar continentes
+                            const edges = new THREE.EdgesGeometry(geom);
+                            const lineMat = new THREE.LineBasicMaterial({ 
+                                color: isG20 ? 0x00e5ff : 0x1e293b, // Cyan Neon vs Cinza Subtil
+                                transparent: true, 
+                                opacity: isG20 ? 0.4 : 0.15 
+                            });
+                            const line = new THREE.LineSegments(edges, lineMat);
+                            mapGroup.add(line);
+                        });
+                    });
+                });
+
+            // Iluminação Dinâmica
+            scene.add(new THREE.AmbientLight(0xffffff, 0.2));
+            const light1 = new THREE.PointLight(0x00e5ff, 2, 800);
+            light1.position.set(0, -50, 200);
+            scene.add(light1);
+            const light2 = new THREE.PointLight(0x00ffa3, 1, 800);
+            light2.position.set(100, 100, 100);
+            scene.add(light2);
+            
+            window.addEventListener('pointerdown', onMapClick);
+            window.addEventListener('mousemove', onMouseMove);
+            animate();
+        }
+
+        async function initNexus() {
+            init3D();
+            const bootProg = document.getElementById('boot-progress');
+            if (bootProg) bootProg.style.width = "100%";
+            
+            try {
+                const raw = await fetch('https://restcountries.com/v3.1/all?fields=cca2,cca3,latlng').then(r => r.json());
+                const loader = new THREE.TextureLoader();
+                
+                Object.keys(G20_INTEL).forEach(id => {
+                    let lat, lon;
+                    if (id === 'eu') { lat = 50.8; lon = 4.3; } // Bruxelas
+                    else {
+                        const country = raw.find(c => c.cca2.toLowerCase() === id);
+                        if(country) { lat = country.latlng[0]; lon = country.latlng[1]; }
+                    }
+
+                    if (lat !== undefined) {
+                        loader.load(`https://flagcdn.com/w160/${id}.png`, (tex) => {
+                            const group = new THREE.Group();
+                            
+                            // Imagem da Bandeira
+                            const flagMesh = new THREE.Mesh(
+                                new THREE.CircleGeometry(4.5, 32), 
+                                new THREE.MeshBasicMaterial({ map: tex })
+                            );
+                            
+                            // Anel de Borda Fixo
+                            const borderRing = new THREE.Mesh(
+                                new THREE.RingGeometry(4.8, 5.5, 32), 
+                                new THREE.MeshBasicMaterial({ color: 0x00e5ff, transparent: true, opacity: 0.8 })
+                            );
+
+                            // Anel Animado (Pulse)
+                            const pulseRing = new THREE.Mesh(
+                                new THREE.RingGeometry(5.8, 6.2, 32), 
+                                new THREE.MeshBasicMaterial({ color: 0x00ffa3, transparent: true, opacity: 0.5 })
+                            );
+                            
+                            group.add(flagMesh); group.add(borderRing); group.add(pulseRing);
+                            group.position.set((lon/180)*150, (lat/90)*75, 8);
+                            group.userData = { id, ...G20_INTEL[id], lat, lon };
+                            
+                            flagNodes.push(group);
+                            animatedRings.push(pulseRing);
+                            scene.add(group);
+
+                            // Luz pontual em cada node estratégico
+                            const nodeLight = new THREE.PointLight(0x00e5ff, 0.5, 30);
+                            nodeLight.position.copy(group.position);
+                            nodeLight.position.z += 5;
+                            scene.add(nodeLight);
+                        });
+                    }
+                });
+            } catch (e) { console.warn("API Offline, inicializando UI visual."); }
+
+            setTimeout(() => { 
+                document.getElementById('system-boot').style.opacity = '0';
+                setTimeout(() => document.getElementById('system-boot').style.display = 'none', 800);
+            }, 2500);
+        }
+
+        function onMouseMove(e) {
+            mouse.x = (e.clientX/window.innerWidth)*2-1;
+            mouse.y = -(e.clientY/window.innerHeight)*2+1;
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObjects(flagNodes, true);
+            document.body.style.cursor = hits.length > 0 ? 'pointer' : 'default';
+        }
+
+        function onMapClick(e) {
+            mouse.x = (e.clientX/window.innerWidth)*2-1;
+            mouse.y = -(e.clientY/window.innerHeight)*2+1;
+            raycaster.setFromCamera(mouse, camera);
+            const hits = raycaster.intersectObjects(flagNodes, true);
+            if(hits.length > 0) {
+                let node = hits[0].object;
+                while(node.parent && !node.userData.id) node = node.parent;
+                showDashboard(node.userData);
+            }
+        }
+
+        // Função de desenho de gráficos (Sparklines curvilíneas)
+        function drawLineChart(canvasId, color, isVolatile = false) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const w = canvas.width = canvas.offsetWidth;
+            const h = canvas.height = canvas.offsetHeight;
+            
+            ctx.clearRect(0, 0, w, h);
+            ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            const points = [];
+            const segments = 15;
+            const step = w / segments;
+            
+            // Gerar pontos (mais variância se for inflação/volátil)
+            for(let i = 0; i <= segments; i++) {
+                const variance = isVolatile ? (Math.random() - 0.5) * h * 0.7 : (Math.random() - 0.5) * h * 0.3;
+                points.push({ x: i * step, y: (h / 2) + variance });
+            }
+            
+            // Desenhar curvas suaves (Quadratic Bézier)
+            ctx.moveTo(points[0].x, points[0].y);
+            for(let i = 1; i < points.length - 1; i++) {
+                const xc = (points[i].x + points[i+1].x) / 2;
+                const yc = (points[i].y + points[i+1].y) / 2;
+                ctx.quadraticCurveTo(points[i].x, points[i].y, xc, yc);
+            }
+            ctx.lineTo(points[points.length-1].x, points[points.length-1].y);
+            ctx.stroke();
+        }
+
+        function showDashboard(data) {
+            currentData = data;
+            const dash = document.getElementById('full-dashboard');
+            document.getElementById('main-flag-display').src = `https://flagcdn.com/w640/${data.id}.png`;
+            
+            const setText = (id, txt) => { const el = document.getElementById(id); if(el) el.innerText = txt; };
+            setText('country-name-title', data.name);
+            setText('leader-name', data.leader);
+            setText('leader-title', data.title);
+            setText('stat-growth', data.growth + "%");
+            setText('stat-inflation', data.inflation + "%");
+            setText('stat-debt', data.debt.toFixed(1) + "%");
+            
+            // Atualizar Gauge Circular SVG
+            const gauge = document.getElementById('debt-gauge');
+            if(gauge) {
+                // Previne valores acima de 100 para a animação do array
+                const debtValue = Math.min(data.debt, 100); 
+                gauge.setAttribute('stroke-dasharray', `${debtValue}, 100`);
+            }
+
+            dash.style.display = 'flex';
+            setTimeout(() => { 
+                dash.classList.add('active', 'opacity-100'); 
+                
+                // Renderizar gráficos após a UI estar visível para garantir as dimensões corretas do canvas
+                drawLineChart('growth-chart', '#00ffa3', false);
+                drawLineChart('inflation-chart', '#ff9d00', true);
+            }, 50);
+            
+            switchTab(1);
+            
+            // Movimento de câmara tático
+            const x = (data.lon/180)*150; const y = (data.lat/90)*75;
+            const st = camera.position.clone(), target = new THREE.Vector3(x, y - 20, 90), start = performance.now();
+            function step(time) {
+                const t = Math.min((time-start)/1500, 1), e = 1-Math.pow(1-t, 4);
+                camera.position.lerpVectors(st, target, e);
+                controls.target.lerp(new THREE.Vector3(x, y, 0), e);
+                controls.update();
+                if(t<1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        function switchTab(idx) {
+            document.querySelectorAll('.tab-btn').forEach(b => { b.classList.remove('active'); b.classList.add('text-gray-500'); });
+            const btn = document.getElementById('btn-tab-'+idx);
+            if(btn) { btn.classList.add('active'); btn.classList.remove('text-gray-500'); }
+            
+            const cont = document.getElementById('tab-content');
+            const d = currentData;
+            if(!cont || !d) return;
+
+            const makeCard = (title, status, ind, impText, lvl, color) => `
+                <div class="data-card border-l-2 border-${color}">
+                    <span class="dimension-label">${title}</span>
+                    <p class="text-xl font-black text-white">${status}</p>
+                    <p class="text-[11px] text-gray-400 mt-2 font-mono">${ind}</p>
+                    <span class="impact-badge bg-${color}/20 text-${color}">Impacto: ${impText}</span>
+                    <div class="progress-bar-bg mt-5"><div class="progress-bar-fill bg-${color} shadow-[0_0_10px_var(--${color})]" style="width:${lvl}%"></div></div>
+                </div>
+            `;
+
+            if (idx === 1) {
+                cont.innerHTML = 
+                    makeCard("Política & Fiscal", d.dim_politics.status, d.dim_politics.indicator, d.dim_politics.impact, d.dim_politics.level, "primary") +
+                    makeCard("Jurídico & Regulatório", d.dim_juridical.status, d.dim_juridical.indicator, d.dim_juridical.impact, d.dim_juridical.level, "warning") +
+                    `<div class="data-card bg-cyan-900/10 border-cyan-500/20"><span class="dimension-label !text-cyan-400">Assessment Institucional</span><p class="text-xs leading-relaxed text-gray-300 mt-2">Nível de risco calculado em ${100 - ((d.dim_politics.level + d.dim_juridical.level)/2)}%. Foco em monitoramento de estabilidade legislativa e reformas de base em curso.</p></div>`;
+            } else if (idx === 2) {
+                cont.innerHTML = 
+                    makeCard("Situação Económica", d.dim_economy.status, d.dim_economy.indicator, d.dim_economy.impact, d.dim_economy.level, "success") +
+                    makeCard("Mercado Consumidor", d.dim_market.status, d.dim_market.indicator, d.dim_market.impact, d.dim_market.level, "primary") +
+                    `<div class="data-card"><span class="dimension-label">Vetor de Crescimento</span><p class="text-3xl font-black text-white mt-2">${((d.dim_economy.level + d.dim_market.level)/2).toFixed(0)}/100</p><p class="text-[10px] text-gray-500 mt-2 uppercase">Índice de Atração de Capital Privado</p></div>`;
+            } else {
+                cont.innerHTML = 
+                    makeCard("Infraestrutura & Logística", d.dim_infra.status, d.dim_infra.indicator, d.dim_infra.impact, d.dim_infra.level, "primary") +
+                    makeCard("Riscos Externos", d.dim_external.status, d.dim_external.indicator, d.dim_external.impact, d.dim_external.level, "danger") +
+                    `<div class="data-card"><span class="dimension-label">Posição Global</span><p class="text-lg font-bold text-white mt-2">Integração Cadeias Valor</p><p class="text-[11px] text-gray-400 mt-2">Exposição cambial vs força exportadora atualizada para cenário Q1 2026.</p></div>`;
+            }
+        }
+
+        function resetView() {
+            const dash = document.getElementById('full-dashboard');
+            dash.classList.remove('active', 'opacity-100');
+            setTimeout(() => { dash.style.display = 'none'; }, 700);
+            
+            // Retorno Orbital Cinematográfico
+            const st = camera.position.clone(), target = new THREE.Vector3(0, -180, 240), start = performance.now();
+            function step(time) {
+                const t = Math.min((time-start)/1500, 1), e = 1-Math.pow(1-t, 4);
+                camera.position.lerpVectors(st, target, e);
+                controls.target.lerp(new THREE.Vector3(0, 0, 0), e);
+                controls.update();
+                if(t<1) requestAnimationFrame(step);
+            }
+            requestAnimationFrame(step);
+        }
+
+        const clock = new THREE.Clock();
+        function animate() { 
+            requestAnimationFrame(animate); 
+            const time = clock.getElapsedTime();
+            
+            // Pulsar anéis dos países
+            animatedRings.forEach(ring => {
+                const scale = 1 + Math.sin(time * 3) * 0.15;
+                ring.scale.set(scale, scale, 1);
+                ring.material.opacity = 0.5 - (Math.sin(time * 3) * 0.2);
+            });
+
+            // Rotação suave da cena para dar dinamismo quando não focado num país
+            if (document.getElementById('full-dashboard').classList.contains('hidden')) {
+                scene.rotation.z = Math.sin(time * 0.1) * 0.02;
+            }
+
+            controls.update(); 
+            renderer.render(scene, camera); 
+        }
+
+        // Listener dinâmico para garantir responsividade no motor 3D ao rodar dispositivos
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        window.onload = initNexus;
+    </script>
+</body>
+</html>
