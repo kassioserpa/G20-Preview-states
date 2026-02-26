@@ -2,8 +2,6 @@ from flask import Flask, jsonify, render_template
 
 app = Flask(__name__)
 
-# Estrutura com os 20 países do G20
-# Substitua os valores pelos dados reais do Banco Mundial/FMI
 g20_data = [
     {"pais": "Alemanha", "pib": 4.2, "inflacao": 2.1, "divida_pib": 70, "populacao": 83},
     {"pais": "Arábia Saudita", "pib": 1.0, "inflacao": 2.5, "divida_pib": 30, "populacao": 35},
@@ -29,7 +27,7 @@ g20_data = [
 
 @app.route("/")
 def index():
-    return render_template("index2.html")
+    return render_template("index.html")
 
 @app.route("/api/g20")
 def api_g20():
@@ -37,3 +35,4 @@ def api_g20():
 
 if __name__ == "__main__":
     app.run(debug=True)
+
