@@ -56,37 +56,5 @@ III. Estrutural
 
 Infraestrutura/Logística, Comércio Externo, Riscos Globais
 
-🔧 Configuração e Instalação
-
-Pré-requisitos
-
-Python 3.10 ou superior
-
-Pip (Gerenciador de pacotes)
-
-Passo a Passo
-
-# 1. Clonar o repositório
-git clone [https://github.com/kassioserpa/G20-Preview-states.git](https://github.com/kassioserpa/G20-Preview-states.git)
-
-# 2. Criar e ativar ambiente virtual
-python -m venv venv
-source venv/bin/activate  # Linux/Mac
-.\venv\Scripts\activate   # Windows
-
-# 3. Instalar dependências
-pip install -r requirements.txt
-
-# 4. Executar o servidor
-python app.py
-
-
-Aceda a http://127.0.0.1:5000 no seu navegador.
-
-📈 Roadmap de Evolução
-
-[ ] Implementação de persistência em base de dados (PostgreSQL) para dossiês personalizados.
-
-[ ] Integração de Web Workers para processamento de geometria 3D em thread separada.
 
 [ ] Feed de notícias em tempo real via Reuters/Bloomberg API integrado ao Ticker.
