@@ -186,6 +186,17 @@
         </div>
     </div>
 
+    <!-- SELETOR DE PAÍSES G20 -->
+    <div class="fixed top-4 right-4 z-30 flex flex-col items-end gap-2">
+        <button id="toggle-list-btn" onclick="toggleCountryList()"
+            class="px-4 py-2 bg-black/70 hover:bg-cyan-500/20 border border-white/10 hover:border-cyan-500/30 rounded-lg text-[9px] font-black uppercase tracking-widest text-gray-400 hover:text-cyan-400 transition-all backdrop-blur-md">
+            ≡ Países G20
+        </button>
+        <div id="country-panel" class="hidden flex-col gap-1 max-h-[75vh] overflow-y-auto no-scrollbar bg-black/85 border border-white/10 rounded-xl p-2 backdrop-blur-xl w-52 shadow-2xl">
+            <!-- preenchido via JS -->
+        </div>
+    </div>
+
     <!-- CONTAINER THREE.JS -->
     <div id="container" class="absolute inset-0 z-0 bg-[#030712]"></div>
 
@@ -262,7 +273,7 @@
                 dim_market: { status: "Envelhecimento Acelerado", indicator: "Poder de Compra Estagnado", impact: "Demanda por robótica, saúde e automação.", level: 70 },
                 dim_infra: { status: "Padrão Global", indicator: "Tecnologia de Ponta", impact: "Eficiência máxima em transportes.", level: 98 },
                 dim_external: { status: "Segurança Económica", indicator: "Aliança com EUA", impact: "Proteção contra riscos geopolíticos asiáticos.", level: 80 } },
-            'kr': { name: "Coreia do Sul", leader: "Yoon Suk-yeol", title: "Presidente", iso3: "KOR", growth: "2.2", inflation: "2.60", debt: 52.0,
+            'kr': { name: "Coreia do Sul", leader: "Lee Jae-myung", title: "Presidente", iso3: "KOR", growth: "2.2", inflation: "2.60", debt: 52.0,
                 dim_politics: { status: "Presidencialismo Forte", indicator: "Polarização Política", impact: "Políticas favoráveis a grandes conglomerados.", level: 75 },
                 dim_juridical: { status: "Ambiente Seguro", indicator: "Proteção de P&D", impact: "Garantia sólida para patentes tecnológicas.", level: 85 },
                 dim_economy: { status: "Foco em Exportação", indicator: "Liderança em Chips/Baterias", impact: "Altamente sensível ao ciclo tech global.", level: 78 },
@@ -276,7 +287,7 @@
                 dim_market: { status: "Elevado PIB per Capita", indicator: "Crescimento Populacional", impact: "Mercado imobiliário e de serviços aquecido.", level: 82 },
                 dim_infra: { status: "Desafios de Escala", indicator: "Transição Energética", impact: "Grandes investimentos em rede verde necessários.", level: 78 },
                 dim_external: { status: "Balanço Estratégico", indicator: "Exportação p/ Ásia", impact: "Exposição à China mitigada pela aliança AUKUS.", level: 75 } },
-            'ca': { name: "Canadá", leader: "Justin Trudeau", title: "Primeiro-Ministro", iso3: "CAN", growth: "1.6", inflation: "2.50", debt: 105.0,
+            'ca': { name: "Canadá", leader: "Mark Carney", title: "Primeiro-Ministro", iso3: "CAN", growth: "1.6", inflation: "2.50", debt: 105.0,
                 dim_politics: { status: "Estabilidade Democrática", indicator: "Transição Possível", impact: "Políticas previsíveis, independentemente do partido.", level: 90 },
                 dim_juridical: { status: "Quadro Legal Premium", indicator: "Proteção ao Investidor", impact: "Ambiente altamente regulado e seguro.", level: 94 },
                 dim_economy: { status: "Integração Norte-Americana", indicator: "Setor Financeiro Forte", impact: "Economia estável ancorada em recursos e finanças.", level: 82 },
@@ -438,6 +449,7 @@
 
         async function initNexus() {
             init3D();
+            populateCountryList();
             const bootProg = document.getElementById('boot-progress');
             if (bootProg) bootProg.style.width = "100%";
             
@@ -491,7 +503,15 @@
                         });
                     }
                 });
-            } catch (e) { console.warn("API Offline, inicializando UI visual."); }
+            } catch (e) {
+                console.warn("API de geolocalização offline. Flags via seletor de países disponíveis.");
+                // Mostrar aviso discreto
+                const warn = document.createElement('div');
+                warn.style.cssText = 'position:fixed;bottom:120px;left:50%;transform:translateX(-50%);background:rgba(255,157,0,0.15);border:1px solid rgba(255,157,0,0.3);color:#ff9d00;font-size:10px;font-family:monospace;padding:8px 16px;border-radius:8px;z-index:25;text-transform:uppercase;letter-spacing:0.1em;pointer-events:none;';
+                warn.textContent = '⚠ Mapa sem coordenadas — use o seletor de países';
+                document.body.appendChild(warn);
+                setTimeout(() => warn.remove(), 5000);
+            }
 
             setTimeout(() => { 
                 document.getElementById('system-boot').style.opacity = '0';
@@ -577,27 +597,30 @@
             }
 
             dash.style.display = 'flex';
-            setTimeout(() => { 
-                dash.classList.add('active', 'opacity-100'); 
-                
+            dash.classList.remove('hidden');
+            setTimeout(() => {
+                dash.classList.add('active', 'opacity-100');
+
                 // Renderizar gráficos após a UI estar visível para garantir as dimensões corretas do canvas
                 drawLineChart('growth-chart', '#00ffa3', false);
                 drawLineChart('inflation-chart', '#ff9d00', true);
             }, 50);
-            
+
             switchTab(1);
-            
-            // Movimento de câmara tático
-            const x = (data.lon/180)*150; const y = (data.lat/90)*75;
-            const st = camera.position.clone(), target = new THREE.Vector3(x, y - 20, 90), start = performance.now();
-            function step(time) {
-                const t = Math.min((time-start)/1500, 1), e = 1-Math.pow(1-t, 4);
-                camera.position.lerpVectors(st, target, e);
-                controls.target.lerp(new THREE.Vector3(x, y, 0), e);
-                controls.update();
-                if(t<1) requestAnimationFrame(step);
+
+            // Movimento de câmara tático (apenas se lat/lon disponíveis)
+            if (data.lat !== undefined && data.lon !== undefined) {
+                const x = (data.lon/180)*150; const y = (data.lat/90)*75;
+                const st = camera.position.clone(), target = new THREE.Vector3(x, y - 20, 90), start = performance.now();
+                function step(time) {
+                    const t = Math.min((time-start)/1500, 1), e = 1-Math.pow(1-t, 4);
+                    camera.position.lerpVectors(st, target, e);
+                    controls.target.lerp(new THREE.Vector3(x, y, 0), e);
+                    controls.update();
+                    if(t<1) requestAnimationFrame(step);
+                }
+                requestAnimationFrame(step);
             }
-            requestAnimationFrame(step);
         }
 
         function switchTab(idx) {
@@ -609,15 +632,23 @@
             const d = currentData;
             if(!cont || !d) return;
 
-            const makeCard = (title, status, ind, impText, lvl, color) => `
-                <div class="data-card border-l-2 border-${color}">
+            const COLOR_MAP = {
+                primary: { hex: '#00e5ff', rgb: '0,229,255' },
+                warning: { hex: '#ff9d00', rgb: '255,157,0' },
+                success: { hex: '#00ffa3', rgb: '0,255,163' },
+                danger:  { hex: '#ff3366', rgb: '255,51,102' },
+            };
+            const makeCard = (title, status, ind, impText, lvl, color) => {
+                const c = COLOR_MAP[color] || COLOR_MAP.primary;
+                return `
+                <div class="data-card" style="border-left: 2px solid ${c.hex}">
                     <span class="dimension-label">${title}</span>
                     <p class="text-xl font-black text-white">${status}</p>
                     <p class="text-[11px] text-gray-400 mt-2 font-mono">${ind}</p>
-                    <span class="impact-badge bg-${color}/20 text-${color}">Impacto: ${impText}</span>
-                    <div class="progress-bar-bg mt-5"><div class="progress-bar-fill bg-${color} shadow-[0_0_10px_var(--${color})]" style="width:${lvl}%"></div></div>
-                </div>
-            `;
+                    <span class="impact-badge" style="background: rgba(${c.rgb},0.15); color: ${c.hex}">Impacto: ${impText}</span>
+                    <div class="progress-bar-bg mt-5"><div class="progress-bar-fill" style="width:${lvl}%; background: ${c.hex}; box-shadow: 0 0 10px rgba(${c.rgb},0.4)"></div></div>
+                </div>`;
+            };
 
             if (idx === 1) {
                 cont.innerHTML = 
@@ -640,7 +671,7 @@
         function resetView() {
             const dash = document.getElementById('full-dashboard');
             dash.classList.remove('active', 'opacity-100');
-            setTimeout(() => { dash.style.display = 'none'; }, 700);
+            setTimeout(() => { dash.style.display = 'none'; dash.classList.add('hidden'); }, 700);
             
             // Retorno Orbital Cinematográfico
             const st = camera.position.clone(), target = new THREE.Vector3(0, -180, 240), start = performance.now();
@@ -667,7 +698,7 @@
             });
 
             // Rotação suave da cena para dar dinamismo quando não focado num país
-            if (document.getElementById('full-dashboard').classList.contains('hidden')) {
+            if (!document.getElementById('full-dashboard').classList.contains('opacity-100')) {
                 scene.rotation.z = Math.sin(time * 0.1) * 0.02;
             }
 
@@ -683,6 +714,48 @@
                 renderer.setSize(window.innerWidth, window.innerHeight);
             }
         });
+
+        // Tecla ESC para fechar o dashboard
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                const dash = document.getElementById('full-dashboard');
+                if (dash && dash.classList.contains('opacity-100')) resetView();
+            }
+        });
+
+        function toggleCountryList() {
+            const panel = document.getElementById('country-panel');
+            if (!panel) return;
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                panel.classList.add('flex');
+            } else {
+                panel.classList.add('hidden');
+                panel.classList.remove('flex');
+            }
+        }
+
+        function populateCountryList() {
+            const panel = document.getElementById('country-panel');
+            if (!panel) return;
+            const sorted = Object.entries(G20_INTEL).sort(([,a],[,b]) => a.name.localeCompare(b.name));
+            panel.innerHTML = sorted.map(([id, d]) => `
+                <button onclick="selectCountryById('${id}')"
+                    class="flex items-center gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-cyan-500/10 transition-all group w-full border border-transparent hover:border-cyan-500/20">
+                    <img src="https://flagcdn.com/w40/${id}.png" class="w-6 h-4 object-cover rounded-sm flex-shrink-0" alt="" onerror="this.style.display='none'">
+                    <span class="text-[9px] font-mono text-gray-400 group-hover:text-cyan-400 transition-colors truncate">${d.name}</span>
+                </button>
+            `).join('');
+        }
+
+        function selectCountryById(id) {
+            const d = G20_INTEL[id];
+            if (!d) return;
+            // Fechar o painel
+            const panel = document.getElementById('country-panel');
+            if (panel) { panel.classList.add('hidden'); panel.classList.remove('flex'); }
+            showDashboard({ id, ...d });
+        }
 
         window.onload = initNexus;
     </script>

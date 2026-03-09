@@ -1,4 +1,5 @@
-from flask import Flask, jsonify, render_template
+from flask import Flask, jsonify, send_file
+import os
 
 app = Flask(__name__)
 
@@ -27,7 +28,7 @@ g20_data = [
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return send_file(os.path.join(os.path.dirname(os.path.abspath(__file__)), "index.html"))
 
 @app.route("/api/g20")
 def api_g20():
